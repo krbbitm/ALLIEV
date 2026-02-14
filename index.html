@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magical Musical Garden</title>
+    <link href='https://fonts.googleapis.com/css?family=La+Belle+Aurore|Georgia' rel='stylesheet' type='text/css'>
+    <style>
+        :root {
+            --dark-color: #000b1a;
+            --flower-pink: #ff4d6d;
+            --flower-purple: #9d4edd;
+            --flower-blue: #48cae4;
+            --leaf-green: #14757a;
+            --grass-green: #0d2818;
+            --firefly-color: #f9f7d9;
+        }
+
+        *, *::after, *::before { padding: 0; margin: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--dark-color);
+            overflow: hidden;
+            perspective: 1500px;
+            font-family: 'Georgia', serif;
+            height: 100vh;
+        }
+
+        .night {
+            position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 70% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 40%),
+                        linear-gradient(to bottom, #000b1a, #001a33);
+            z-index: 0;
+        }
+
+        /* --- FIREFLIES --- */
+        .firefly {
+            position: absolute; width: 4px; height: 4px;
+            background: var(--firefly-color); border-radius: 50%;
+            box-shadow: 0 0 10px 2px white, 0 0 20px 5px var(--firefly-color);
+            z-index: 5;
+            animation: drift var(--d) ease-in-out infinite, flash var(--f) ease-in-out infinite;
+        }
+        @keyframes drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(var(--x), var(--y)); } }
+        @keyframes flash { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+        /* --- GRASS & SMALL FLOWERS --- */
+        .wild-floor { position: absolute; bottom: 0; left: 0; width: 100%; height: 30vh; pointer-events: none; z-index: 2; transition: opacity 1s; }
+        .grass-blade { position: absolute; bottom: 0; width: 2px; height: var(--h); background: linear-gradient(to top, var(--grass-green), transparent); transform-origin: bottom; animation: sway-grass var(--t) ease-in-out infinite; opacity: 0.7; }
+        .small-flower { position: absolute; bottom: 0; display: flex; flex-direction: column; align-items: center; transform-origin: bottom center; animation: sway-grass var(--t) ease-in-out infinite; }
+        .small-flower-head { position: relative; width: 0; height: 0; transform: scale(var(--s)) rotate(var(--a)); }
+        .small-petal { position: absolute; left: 50%; bottom: 0; width: 10px; height: 18px; border-radius: 50%; transform-origin: bottom center; opacity: 0.8; }
+        .small-stem { width: 2px; height: var(--h); background: linear-gradient(to top, #1b4332, var(--leaf-green)); }
+
+        /* --- HERO FLOWERS --- */
+        .flowers-container {
+            position: absolute; bottom: 5vh; left: 65%;
+            transform: translateX(-50%) scale(0.8);
+            display: flex; align-items: flex-end; gap: 4vmin;
+            z-index: 10; transition: opacity 1s;
+        }
+        .flower { position: relative; transform-origin: bottom center; }
+        .flower__line { height: var(--line-h); width: 1.2vmin; background-image: linear-gradient(to top, transparent, var(--leaf-green), #39c6d6); animation: grow-flower-tree 3s backwards; }
+        .flower__leafs { position: relative; animation: blooming-flower 2s backwards 1s; }
+        .flower__leaf { position: absolute; bottom: 0; left: 50%; width: 7vmin; height: 10vmin; border-radius: 50%; background-image: linear-gradient(to top, var(--p-color1), var(--p-color2)); transform-origin: bottom center; }
+        .flower__leaf--1 { transform: translate(-10%, 1%) rotateY(40deg) rotateX(-50deg); }
+        .flower__leaf--2 { transform: translate(-50%, -4%) rotateX(40deg); }
+        .flower__leaf--3 { transform: translate(-90%, 0%) rotateY(45deg) rotateX(50deg); }
+        .f-pink { --p-color1: #ff4d6d; --p-color2: #ffccd5; --line-h: 60vmin; animation: sway 4s infinite; }
+        .f-purple { --p-color1: #9d4edd; --p-color2: #e0aaff; --line-h: 45vmin; animation: sway 3.5s infinite 0.5s; }
+        .f-blue { --p-color1: #0077b6; --p-color2: #90e0ef; --line-h: 52vmin; animation: sway 5s infinite 1s; }
+
+        /* --- ZOOM CARD --- */
+        .ui-layer {
+            position: absolute; width: 100%; height: 100%;
+            display: flex; justify-content: flex-start; align-items: center;
+            padding-left: 8vw; z-index: 20; transition: opacity 1s;
+        }
+
+        .card-container {
+            width: 400px; max-height: 80vh; 
+            background: rgba(255, 250, 250, 0.98); border-radius: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5); color: #1b4332;
+            padding: 30px; cursor: pointer; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card-container.zoomed { transform: scale(1.05) translateZ(50px); }
+
+        .scroll-area {
+            overflow-y: auto; padding-right: 15px;
+            scrollbar-width: thin; scrollbar-color: var(--flower-pink) transparent;
+        }
+        .scroll-area::-webkit-scrollbar { width: 5px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: var(--flower-pink); border-radius: 10px; }
+
+        .letter-content { 
+            display: none; line-height: 1.8; text-align: left; 
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .letter-content.show { display: block; opacity: 1; transform: translateY(0); }
+        .letter-content h2 { color: var(--flower-pink); font-family: 'La Belle Aurore', cursive; font-size: 2.2rem; margin-bottom: 10px; }
+
+        /* --- YOUTUBE PLAYER STYLING --- */
+        .music-player {
+            margin-top: 10px; margin-bottom: 20px;
+            border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: #000;
+        }
+
+        .btn-group { display: flex; gap: 15px; margin-top: 25px; justify-content: center; padding-bottom: 20px; }
+        button { padding: 12px 28px; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; }
+        #yesBtn { background: var(--flower-pink); color: white; }
+        #noBtn { background: #eee; color: #555; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes sway-grass { 0%, 100% { transform: rotate(-6deg); } 50% { transform: rotate(6deg); } }
+        @keyframes grow-flower-tree { 0% { height: 0; } }
+        @keyframes blooming-flower { 0% { transform: scale(0); } }
+
+        #nCanvasRender { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 30; }
+        .happy-valentines { position: absolute; width: 100%; text-align: center; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #ff81fc; font-family: 'La Belle Aurore', cursive; opacity: 0; font-size: 5em; transition: 2s; z-index: 40; pointer-events: none; }
+        .happy-valentines.show { opacity: 1; }
+        .not-loaded * { animation-play-state: paused !important; }
+    </style>
+</head>
+<body class="not-loaded">
+
+    <div class="night"></div>
+    <div id="firefly-container"></div>
+    <div class="wild-floor" id="wildFloor"></div>
+
+    <div class="flowers-container" id="heroFlowers">
+        <div class="flower f-pink"><div class="flower__leafs"><div class="flower__leaf flower__leaf--1"></div><div class="flower__leaf flower__leaf--2"></div><div class="flower__leaf flower__leaf--3"></div></div><div class="flower__line"></div></div>
+        <div class="flower f-purple"><div class="flower__leafs"><div class="flower__leaf flower__leaf--1"></div><div class="flower__leaf flower__leaf--2"></div><div class="flower__leaf flower__leaf--3"></div></div><div class="flower__line"></div></div>
+        <div class="flower f-blue"><div class="flower__leafs"><div class="flower__leaf flower__leaf--1"></div><div class="flower__leaf flower__leaf--2"></div><div class="flower__leaf flower__leaf--3"></div></div><div class="flower__line"></div></div>
+    </div>
+
+    <div class="ui-layer" id="uiLayer">
+        <div class="card-container" id="mainCard" onclick="revealLetter()">
+            <div id="cover">
+                <h1 style="font-family: 'La Belle Aurore'; font-size: 2.8rem; color: var(--flower-pink);">11:11 To my Viell...</h1>
+                <p style="margin-top: 10px; opacity: 0.7;">(Tap to open my letter)</p>
+            </div>
+            
+            <div class="scroll-area" id="scrollContainer">
+                <div class="letter-content" id="letter">
+                    <h2>My Viella,</h2>
+                    
+                    <div class="music-player">
+                        <iframe width="100%" height="200" 
+                            src="https://www.youtube.com/embed/Q49pnA4jsp8?si=ZBlU2zEOsHRA5jfJ" 
+                            title="YouTube video player" frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+
+                    <p id="mainLetterText">
+                       Even though there are hundreds of miles between us right now, I wanted to take a moment today to tell you exactly what’s on my heart. 
+                        <br><br>
+                        I know we’ve got a long way to go. Long distance isn't easy, and yung wait to finally be in the same room can feel heavy sometimes. But despite the distance, I appreciate the way you always make me feel cared for and loved. You have this way of reaching through the screen and making me feel seen, and that means more to me than I can put into words na para bang magic.
+                      <br><br>
+                      Pero I'll be honest with you I dont see myself as handsome as what you call me or waht people says. Sometimes, I see myself as a knight who is a bit weak, or someone whose status feels low compared to what you deserve, but from all of that I loved you with all I've got.
+                      <br><br>
+                      Todays valentines I want to ask you something important. Can I court you? I know we haven't met in person yet, so maybe we can call it "half-courtship" half half lang muna for now. I want our label to feel real, even while we are apart. I want to honor you and show you my intentions are serious. Then, the moment I finally get to stand before you and meet your parents, I want to fully court you with their blessing and let them know exactly who I am and how much you mean to me, baka lang naman chariz pero thankskiee so much for how you always make me feel.
+                      <br><br>
+                      Thank you for being my person. Happy Valentine's Day.
+                      <br><br>
+                      With all my love,
+                      Your Langlang <3
+                                       
+                                          <br><br>
+                      Time to ask will you let me?
+                                       
+              
+                    </p>
+                    
+                    <div class="btn-group">
+                        <button id="yesBtn" onclick="startHeart(event)">YES</button>
+                        <button id="noBtn" onclick="shrinkNo(event)">NO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="nCanvasRender"></canvas>
+    <div id="nValentinesText" class="happy-valentines">WOAH WOAHHHH BWHAHA AAAAAA</div>
+
+    <script>
+        window.onload = () => {
+            document.body.classList.remove("not-loaded");
+            generateWildFloor();
+            generateFireflies();
+        };
+
+        function generateWildFloor() {
+            const container = document.getElementById('wildFloor');
+            const flowerColors = ['#ff4d6d', '#ffccd5', '#9d4edd', '#e0aaff', '#ffffff'];
+            for (let i = 0; i < 150; i++) {
+                const blade = document.createElement('div');
+                blade.className = 'grass-blade';
+                blade.style.left = Math.random() * 100 + '%';
+                blade.style.setProperty('--h', (Math.random() * 18 + 5) + 'vh');
+                blade.style.setProperty('--t', (Math.random() * 2 + 1.5) + 's');
+                container.appendChild(blade);
+                if (i % 6 === 0) {
+                    const fUnit = document.createElement('div');
+                    fUnit.className = 'small-flower';
+                    fUnit.style.left = Math.random() * 100 + '%';
+                    fUnit.style.setProperty('--h', (Math.random() * 15 + 5) + 'vh');
+                    fUnit.style.setProperty('--t', (Math.random() * 2 + 1.5) + 's');
+                    const head = document.createElement('div');
+                    head.className = 'small-flower-head';
+                    head.style.setProperty('--s', Math.random() * 0.4 + 0.3);
+                    head.style.setProperty('--a', Math.random() * 360 + 'deg');
+                    const color = flowerColors[Math.floor(Math.random() * flowerColors.length)];
+                    for (let p = 0; p < 5; p++) {
+                        const petal = document.createElement('div');
+                        petal.className = 'small-petal';
+                        petal.style.background = color;
+                        petal.style.transform = `translateX(-50%) rotate(${(360/5)*p}deg)`;
+                        head.appendChild(petal);
+                    }
+                    const stem = document.createElement('div');
+                    stem.className = 'small-stem';
+                    fUnit.appendChild(head); fUnit.appendChild(stem); container.appendChild(fUnit);
+                }
+            }
+        }
+
+        function generateFireflies() {
+            const container = document.getElementById('firefly-container');
+            for (let i = 0; i < 20; i++) {
+                const firefly = document.createElement('div');
+                firefly.className = 'firefly';
+                firefly.style.left = Math.random() * 100 + '%';
+                firefly.style.top = Math.random() * 60 + '%';
+                firefly.style.setProperty('--d', (Math.random() * 8 + 4) + 's');
+                firefly.style.setProperty('--f', (Math.random() * 3 + 1) + 's');
+                firefly.style.setProperty('--x', (Math.random() * 120 - 60) + 'px');
+                firefly.style.setProperty('--y', (Math.random() * 120 - 60) + 'px');
+                container.appendChild(firefly);
+            }
+        }
+
+        let isOpened = false;
+        function revealLetter() {
+            if(isOpened) return;
+            isOpened = true;
+            
+            const card = document.getElementById('mainCard');
+            const letter = document.getElementById('letter');
+            const cover = document.getElementById('cover');
+
+            card.classList.add('zoomed');
+            
+            setTimeout(() => {
+                cover.style.display = 'none';
+                letter.classList.add('show');
+            }, 300);
+        }
+
+        let noScale = 1;
+        function shrinkNo(e) {
+            e.stopPropagation();
+            noScale -= 0.15;
+            const btn = document.getElementById('noBtn');
+            const yesBtn = document.getElementById('yesBtn');
+            if (noScale <= 0.2) {
+                btn.style.display = 'none';
+                yesBtn.style.transform = 'scale(2)';
+            } else {
+                btn.style.transform = `scale(${noScale})`;
+                yesBtn.style.transform = `scale(${1 + (1 - noScale)})`;
+            }
+        }
+
+        function startHeart(e) {
+            e.stopPropagation();
+            document.getElementById('uiLayer').style.opacity = '0';
+            document.getElementById('heroFlowers').style.opacity = '0';
+            document.getElementById('wildFloor').style.opacity = '0';
+            document.getElementById('firefly-container').style.opacity = '0';
+            setTimeout(() => { 
+                document.getElementById('uiLayer').style.display = 'none';
+                document.getElementById('nCanvasRender').style.display = 'block';
+                document.getElementById('nValentinesText').classList.add('show');
+                initHeartAnimation();
+            }, 1000);
+        }
+
+        function initHeartAnimation() {
+            const canvas = document.getElementById('nCanvasRender');
+            const ctx = canvas.getContext('2d');
+            let w = canvas.width = window.innerWidth;
+            let h = canvas.height = window.innerHeight;
+            function heartFunc(t) { return { x: 16 * Math.pow(Math.sin(t), 3), y: -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) }; }
+            let particles = [];
+            for(let i=0; i<350; i++) { particles.push({ x: w/2, y: h/2, size: Math.random() * 2 + 1, color: `hsla(${Math.random()*60 + 310}, 90%, 65%, 0.9)`, t: Math.random() * Math.PI * 2, speed: 0.02 + Math.random() * 0.02 }); }
+            function render() {
+                ctx.fillStyle = 'rgba(0, 11, 26, 0.15)';
+                ctx.fillRect(0,0,w,h);
+                particles.forEach(p => {
+                    const hPos = heartFunc(p.t);
+                    const scale = Math.min(w,h)/35;
+                    p.x += ((w/2 + hPos.x * scale) - p.x) * p.speed;
+                    p.y += ((h/2 + hPos.y * scale) - p.y) * p.speed;
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                    p.t += p.speed;
+                });
+                requestAnimationFrame(render);
+            }
+            render();
+        }
+    </script>
+</body>
+</html>
